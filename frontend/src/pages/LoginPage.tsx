@@ -15,12 +15,19 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/authService";
-import { saveToken } from "../utils/storage";
+import { 
+  saveToken, 
+  saveUserRole, 
+  saveUsername, 
+  saveRememberedUsername,
+  removeRememberedUsername 
+} from "../utils/storage";
 
 // Response trả về từ BE
 interface LoginResponse {
   token: string;
   role: string;
+  username: string;
 }
 
 const LoginPage: React.FC = () => {
@@ -39,7 +46,10 @@ const LoginPage: React.FC = () => {
   // Load username đã lưu
   useEffect(() => {
     const saved = localStorage.getItem("savedUsername");
-    if (saved) setUsername(saved);
+    if (saved) {
+      setUsername(saved);
+      setRememberMe(true);
+    }
   }, []);
 
   // -----------------------------------
@@ -48,28 +58,52 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    
+    // Validation
+    if (!username.trim()) {
+      setError("Vui lòng nhập tên đăng nhập");
+      return;
+    }
+    
+    if (!password.trim()) {
+      setError("Vui lòng nhập mật khẩu");
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
       const res: LoginResponse = await login(username, password);
 
+      // Lưu thông tin
       saveToken(res.token);
-      localStorage.setItem("role", res.role);
+      saveUserRole(res.role);
+      saveUsername(res.username || username);
 
-      if (rememberMe) localStorage.setItem("savedUsername", username);
-      else localStorage.removeItem("savedUsername");
+      if (rememberMe) {
+        saveRememberedUsername(username);
+      } else {
+        removeRememberedUsername();
+      }
 
       navigate("/dashboard");
-    } catch (err) {
-      setError("Sai tên đăng nhập hoặc mật khẩu!");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "Sai tên đăng nhập hoặc mật khẩu!");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    setIsLoading(false);
+  // Handle key press for Enter
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin(e as any);
+    }
   };
 
   return (
     <div className={styles.container}>
-      {" "}
       <div className={styles.mainContent}>
         {/* LEFT SECTION */}
         <div className={styles.leftSection}>
@@ -171,8 +205,10 @@ const LoginPage: React.FC = () => {
                     placeholder="Nhập tên đăng nhập"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     className={styles.textInput}
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -195,14 +231,17 @@ const LoginPage: React.FC = () => {
                     placeholder="••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     className={styles.textInput}
                     required
+                    disabled={isLoading}
                   />
 
                   <button
                     type="button"
                     className={styles.passwordToggle}
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
                   </button>
@@ -215,6 +254,7 @@ const LoginPage: React.FC = () => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLoading}
                 />
                 <span className={styles.checkboxText}>Ghi nhớ đăng nhập</span>
               </label>
@@ -227,7 +267,14 @@ const LoginPage: React.FC = () => {
                 }`}
                 disabled={isLoading}
               >
-                {isLoading ? "Đang xác thực..." : "Đăng nhập vào hệ thống"}
+                {isLoading ? (
+                  <>
+                    <span className={styles.spinner}></span>
+                    Đang xác thực...
+                  </>
+                ) : (
+                  "Đăng nhập vào hệ thống"
+                )}
               </button>
 
               {/* WARNING */}
