@@ -1,16 +1,12 @@
 package com.codegym.schoolsocial.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "accounts")
 @Getter @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor @AllArgsConstructor
 public class Account {
 
     @Id
@@ -21,12 +17,15 @@ public class Account {
     private String username;
 
     @Column(nullable = false)
-    private String password; // BCrypt hash
+    private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Role role;
 
-    @Column(name = "personal_info_id")
-    private Long personalInfoId;
+    @Enumerated(EnumType.STRING)
+    private Status status = Status.ACTIVE;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "personal_info_id", nullable = false)
+    private PersonalInfo personalInfo;
 }

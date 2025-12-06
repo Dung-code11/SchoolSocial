@@ -2,6 +2,7 @@ package com.codegym.schoolsocial.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -10,11 +11,14 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET = "SUPER_SECRET_KEY_123456";
-    private static final long EXPIRATION = 1000 * 60 * 60 * 24;
+    @Value("${jwt.secret}")
+    private String secret;
+
+    @Value("${jwt.expiration}")
+    private long expirationMs;
 
     private Algorithm algorithm() {
-        return Algorithm.HMAC256(SECRET.getBytes());
+        return Algorithm.HMAC256(secret.getBytes());
     }
 
     public String generateToken(String username, String role) {
@@ -22,7 +26,7 @@ public class JwtService {
                 .withSubject(username)
                 .withClaim("role", role)
                 .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION))
+                .withExpiresAt(new Date(System.currentTimeMillis() + expirationMs))
                 .sign(algorithm());
     }
 

@@ -3,6 +3,7 @@ package com.codegym.schoolsocial.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -34,11 +35,23 @@ public class SecurityConfig {
         // Phân quyền
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login").permitAll()
+
+                // ⭐ ADMIN được CRUD user
+                .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+
+                // ⭐ GET list + detail user thì yêu cầu đăng nhập
+                .requestMatchers(HttpMethod.GET, "/api/users/**").authenticated()
+
+                // Các API theo module riêng
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/teacher/**").hasRole("TEACHER")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
+
                 .anyRequest().authenticated()
         );
+
 
         // JWT Stateless
         http.sessionManagement(sm ->
