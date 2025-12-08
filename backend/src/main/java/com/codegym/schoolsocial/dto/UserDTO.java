@@ -18,4 +18,7 @@ public class UserDTO {
     private String dob;
 
     private Status status;
+
+    private Long classId;
+    private String className;
 }

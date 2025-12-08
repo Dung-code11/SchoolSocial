@@ -30,19 +30,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        // ⭐⭐ QUAN TRỌNG: BỎ QUA CÁC ENDPOINT AUTH
         String path = request.getServletPath();
+
+        // BỎ QUA CÁC ENDPOINT AUTH
         if (path.startsWith("/api/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // BỎ QUA PRE-FLIGHT CORS (OPTIONS)
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String header = request.getHeader("Authorization");
 
+        // Không có header -> coi như chưa đăng nhập, cho filter chain xử lý tiếp
         if (header == null || !header.startsWith("Bearer ")) {
-            // ⭐ Nếu không có token, trả về 401 hoặc tiếp tục
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Missing or invalid Authorization header");
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -70,10 +76,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Token không hợp lệ
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token: " + e.getMessage());
-            return;
+            // Token lỗi -> xoá context, để Spring Security xử lý như chưa đăng nhập
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

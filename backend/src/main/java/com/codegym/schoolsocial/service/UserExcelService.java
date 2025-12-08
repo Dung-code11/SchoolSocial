@@ -8,6 +8,7 @@ import com.codegym.schoolsocial.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,7 @@ import java.util.List;
 public class UserExcelService {
 
     private final AccountRepository accountRepo;
+    private final BCryptPasswordEncoder passwordEncoder; // thêm encoder
 
     public ByteArrayInputStream exportExcel() throws Exception {
 
@@ -57,6 +59,7 @@ public class UserExcelService {
 
         return new ByteArrayInputStream(out.toByteArray());
     }
+
     public void importExcel(MultipartFile file) throws Exception {
 
         Workbook wb = new XSSFWorkbook(file.getInputStream());
@@ -84,7 +87,10 @@ public class UserExcelService {
 
             Account acc = new Account();
             acc.setUsername(username);
-            acc.setPassword("$2a$10$defaultPassword"); // HASH thật
+
+            // MÃ HÓA PASSWORD DEFAULT (VD: "123456")
+            acc.setPassword(passwordEncoder.encode("123456"));
+
             acc.setRole(Role.valueOf(role));
             acc.setStatus(Status.valueOf(status));
             acc.setPersonalInfo(info);
