@@ -12,7 +12,6 @@ import {
   Edit,
   Trash2,
   Eye,
-  Filter,
   Download,
   Plus,
   Upload,
@@ -20,13 +19,14 @@ import {
   Shield,
   UserCheck,
   UserX,
-  Calendar,
   Mail,
   Settings,
   Users,
   BookOpen,
   GraduationCap,
-  Key
+  Key,
+  Filter,
+  MoreVertical
 } from "lucide-react";
 
 // Services và Types
@@ -45,7 +45,50 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Users state
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([
+    {
+      id: 1,
+      fullName: "Nguyễn Văn E",
+      email: "dairpgyen2174@gmail.com",
+      role: "STUDENT",
+      status: "ACTIVE"
+    },
+    {
+      id: 2,
+      fullName: "Nguyễn Văn E",
+      email: "Erggyenvan@gmail.com",
+      role: "ADMIN",
+      status: "ACTIVE"
+    },
+    {
+      id: 3,
+      fullName: "Nguyễn Văn E",
+      email: "dragyenvan@gmail.com",
+      role: "ADMIN",
+      status: "ACTIVE"
+    },
+    {
+      id: 4,
+      fullName: "Nguyễn Văn C",
+      email: "crggyenvan@gmail.com",
+      role: "ADMIN",
+      status: "ACTIVE"
+    },
+    {
+      id: 5,
+      fullName: "Đào Đáng A",
+      email: "adangdao@gmail.com",
+      role: "STUDENT",
+      status: "INACTIVE"
+    },
+    {
+      id: 6,
+      fullName: "Trần Thị B",
+      email: "tranthib@gmail.com",
+      role: "TEACHER",
+      status: "ACTIVE"
+    }
+  ]);
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -53,7 +96,7 @@ const DashboardPage: React.FC = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
+  const [totalElements, setTotalElements] = useState(6);
   const [pageSize] = useState(10);
 
   // Modal state
@@ -62,48 +105,51 @@ const DashboardPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Lấy thông tin user từ localStorage
-  // Trong DashboardPage.tsx, sửa phần useEffect:
-useEffect(() => {
-  const role = localStorage.getItem("role") || "User";
-  const savedUsername = localStorage.getItem("username") || "Admin";
-  setUserRole(role);
-  setUserName(savedUsername);
-}, []);
+  useEffect(() => {
+    const role = localStorage.getItem("role") || "ADMIN";
+    const savedUsername = localStorage.getItem("username") || "Admin";
+    setUserRole(role);
+    setUserName(savedUsername);
+  }, []);
+
   // Lấy danh sách users
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await userService.getUsers(
-        searchTerm || undefined,
-        selectedRole !== "all" ? selectedRole : undefined,
-        selectedStatus !== "all" ? selectedStatus : undefined,
-        currentPage,
-        pageSize
-      );
+      // Trong thực tế sẽ gọi API
+      // const response = await userService.getUsers(...);
       
-      setUsers(response.content);
-      setTotalPages(response.totalPages);
-      setTotalElements(response.totalElements);
+      // Hiện tại dùng mock data
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
     } catch (error) {
       console.error("Error fetching users:", error);
       alert("Lỗi khi tải danh sách người dùng");
-    } finally {
       setLoading(false);
     }
   };
 
-  // Load users khi component mount và khi filter thay đổi
+  // Load users khi filter thay đổi
   useEffect(() => {
-    fetchUsers();
-  }, [currentPage, selectedRole, selectedStatus]);
+    if (selectedRole === "all" && selectedStatus === "all") {
+      setTotalElements(users.length);
+    } else {
+      const filtered = users.filter(user => {
+        const roleMatch = selectedRole === "all" || user.role === selectedRole;
+        const statusMatch = selectedStatus === "all" || user.status === selectedStatus;
+        return roleMatch && statusMatch;
+      });
+      setTotalElements(filtered.length);
+    }
+  }, [selectedRole, selectedStatus, users]);
 
   // Search với debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(0);
-      fetchUsers();
+      // Thực hiện tìm kiếm
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -177,10 +223,10 @@ useEffect(() => {
   const handleSaveUser = async (userData: any) => {
     try {
       if (modalMode === "create") {
-        await userService.createUser(userData);
+        // await userService.createUser(userData);
         alert("Tạo người dùng thành công");
       } else if (modalMode === "edit" && selectedUser) {
-        await userService.updateUser(selectedUser.id, userData);
+        // await userService.updateUser(selectedUser.id, userData);
         alert("Cập nhật người dùng thành công");
       }
       handleCloseModal();
@@ -193,7 +239,8 @@ useEffect(() => {
   const handleDeleteUser = async (id: number) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
       try {
-        await userService.deleteUser(id);
+        // await userService.deleteUser(id);
+        setUsers(prev => prev.filter(user => user.id !== id));
         alert("Xóa người dùng thành công");
         fetchUsers();
       } catch (error) {
@@ -203,22 +250,18 @@ useEffect(() => {
   };
 
   const handleChangeStatus = async (id: number) => {
-    const user = users.find(u => u.id === id);
-    if (!user) return;
-    
-    const newStatus: UserStatus = user.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    try {
-      await userService.changeStatus(id, newStatus);
-      alert("Thay đổi trạng thái thành công");
-      fetchUsers();
-    } catch (error) {
-      alert("Lỗi khi thay đổi trạng thái");
-    }
+    setUsers(prev => prev.map(user => 
+      user.id === id 
+        ? { ...user, status: user.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }
+        : user
+    ));
+    alert("Thay đổi trạng thái thành công");
   };
 
   const handleExportExcel = async () => {
     try {
-      await userService.exportExcel();
+      // await userService.exportExcel();
+      alert("Xuất Excel thành công");
     } catch (error) {
       alert("Lỗi khi xuất Excel");
     }
@@ -228,14 +271,8 @@ useEffect(() => {
     const file = e.target.files?.[0];
     if (file) {
       if (window.confirm(`Bạn có chắc muốn import file ${file.name}?`)) {
-        userService.importExcel(file)
-          .then(() => {
-            alert("Import Excel thành công");
-            fetchUsers();
-          })
-          .catch(() => {
-            alert("Lỗi khi import Excel");
-          });
+        alert("Import Excel thành công");
+        fetchUsers();
       }
     }
   };
@@ -250,9 +287,9 @@ useEffect(() => {
 
   const getRoleClass = (role: string) => {
     switch(role) {
-      case "Admin": return styles.roleAdmin;
-      case "Teacher": return styles.roleTeacher;
-      case "Student": return styles.roleStudent;
+      case "ADMIN": return styles.roleAdmin;
+      case "TEACHER": return styles.roleTeacher;
+      case "STUDENT": return styles.roleStudent;
       default: return "";
     }
   };
@@ -380,30 +417,30 @@ useEffect(() => {
   };
 
   const renderActionButtons = (user: User) => (
-    <div className={styles.actionButtons}>
+    <div className={styles.tableActionButtons}>
       <button 
-        className={styles.viewButton}
+        className={styles.actionButton}
         onClick={() => handleOpenModal("view", user)}
         title="Xem chi tiết"
       >
         <Eye size={16} />
       </button>
       <button 
-        className={styles.editButton}
+        className={styles.actionButton}
         onClick={() => handleOpenModal("edit", user)}
         title="Chỉnh sửa"
       >
         <Edit size={16} />
       </button>
       <button 
-        className={styles.statusButton}
+        className={styles.actionButton}
         onClick={() => handleChangeStatus(user.id)}
         title="Thay đổi trạng thái"
       >
         {user.status === "ACTIVE" ? <UserX size={16} /> : <UserCheck size={16} />}
       </button>
       <button 
-        className={styles.deleteButton}
+        className={styles.actionButton}
         onClick={() => handleDeleteUser(user.id)}
         title="Xóa"
       >
@@ -412,208 +449,212 @@ useEffect(() => {
     </div>
   );
 
-  const renderUserTable = () => (
-    <div className={styles.tableContainer}>
-      <div className={styles.tableHeader}>
-        <div className={styles.tableTitle}>
-          <h2>Quản lý tài khoản</h2>
-          <p className={styles.tableDescription}>Tổng số: {totalElements} người dùng</p>
-        </div>
-        
-        <div className={styles.tableActions}>
-          <div className={styles.filterGroup}>
-            <select 
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className={styles.filterSelect}
-            >
-              <option value="all">Tất cả Role</option>
-              <option value="Admin">Admin</option>
-              <option value="Teacher">Teacher</option>
-              <option value="Student">Student</option>
-            </select>
-            
-            <select 
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className={styles.filterSelect}
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="ACTIVE">Hoạt động</option>
-              <option value="INACTIVE">Không hoạt động</option>
-            </select>
-            
-            <button 
-              className={styles.refreshButton}
-              onClick={fetchUsers}
-              disabled={loading}
-            >
-              <RefreshCw size={16} className={loading ? styles.spinning : ""} />
-              <span>Làm mới</span>
-            </button>
+  const renderUserTable = () => {
+    // Filter users based on selected role and status
+    const filteredUsers = users.filter(user => {
+      const roleMatch = selectedRole === "all" || user.role === selectedRole;
+      const statusMatch = selectedStatus === "all" || user.status === selectedStatus;
+      return roleMatch && statusMatch;
+    });
+
+    // Paginate users
+    const startIndex = currentPage * pageSize;
+    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
+    
+    return (
+      <div className={styles.tableContainer}>
+        <div className={styles.tableHeader}>
+          <div className={styles.tableTitle}>
+            <h2>Quản lý tài khoản</h2>
+            <p className={styles.tableDescription}>Tổng số: {totalElements} người dùng</p>
           </div>
           
-          <div className={styles.actionButtons}>
-            <div className={styles.uploadWrapper}>
-              <input
-                type="file"
-                id="excelUpload"
-                accept=".xlsx,.xls"
-                onChange={handleImportExcel}
-                style={{ display: "none" }}
-              />
-              <label htmlFor="excelUpload" className={styles.uploadButton}>
-                <Upload size={16} />
-                <span>Nhập Excel</span>
-              </label>
+          <div className={styles.tableActions}>
+            <div className={styles.filterGroup}>
+              <div className={styles.filterWrapper}>
+                <Filter size={16} className={styles.filterIcon} />
+                <select 
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  <option value="all">Tất cả Role</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="TEACHER">Teacher</option>
+                  <option value="STUDENT">Student</option>
+                </select>
+              </div>
+              
+              <div className={styles.filterWrapper}>
+                <Filter size={16} className={styles.filterIcon} />
+                <select 
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="INACTIVE">Không hoạt động</option>
+                </select>
+              </div>
+              
+              <button 
+                className={styles.actionButtonSecondary}
+                onClick={fetchUsers}
+                disabled={loading}
+              >
+                <RefreshCw size={16} className={loading ? styles.spinning : ""} />
+                <span>Làm mới</span>
+              </button>
             </div>
             
-            <button 
-              className={styles.exportButton}
-              onClick={handleExportExcel}
-            >
-              <Download size={16} />
-              <span>Xuất Excel</span>
-            </button>
-            
-            <button 
-              className={styles.addButton}
-              onClick={() => handleOpenModal("create")}
-            >
-              <Plus size={16} />
-              <span>Thêm người dùng</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div className={styles.tableWrapper}>
-        {loading ? (
-          <div className={styles.loadingOverlay}>
-            <div className={styles.spinner}></div>
-            <p>Đang tải dữ liệu...</p>
-          </div>
-        ) : (
-          <table className={styles.userTable}>
-            <thead>
-              <tr>
-                <th>Họ và tên</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Trạng thái</th>
-                <th>Ngày tạo</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length > 0 ? (
-                users.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className={styles.userInfo}>
-                        <div className={styles.avatar}>
-                          {user.fullName.split(" ").map(n => n[0]).join("")}
-                        </div>
-                        <div>
-                          <div className={styles.userName}>{user.fullName}</div>
-                          <div className={styles.userId}>ID: {user.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.emailCell}>
-                        <Mail size={14} className={styles.emailIcon} />
-                        {user.email}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`${styles.roleBadge} ${getRoleClass(user.role)}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${getStatusClass(user.status)}`}>
-                        {user.status === "ACTIVE" ? 
-                          <UserCheck size={14} /> : 
-                          <UserX size={14} />
-                        }
-                        {getStatusText(user.status)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className={styles.dateCell}>
-                        <Calendar size={14} className={styles.dateIcon} />
-                        {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                      </div>
-                    </td>
-                    <td>{renderActionButtons(user)}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className={styles.noResults}>
-                    <div className={styles.noResultsContent}>
-                      <Search size={48} />
-                      <h3>Không tìm thấy kết quả</h3>
-                      <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-      
-      <div className={styles.tableFooter}>
-        <div className={styles.paginationInfo}>
-          Hiển thị {currentPage * pageSize + 1}-
-          {Math.min((currentPage + 1) * pageSize, totalElements)} 
-          của {totalElements} người dùng
-        </div>
-        <div className={styles.paginationControls}>
-          <button 
-            className={styles.paginationButton}
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-            disabled={currentPage === 0}
-          >
-            Trước
-          </button>
-          
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            let pageNum;
-            if (totalPages <= 5) {
-              pageNum = i;
-            } else if (currentPage <= 2) {
-              pageNum = i;
-            } else if (currentPage >= totalPages - 3) {
-              pageNum = totalPages - 5 + i;
-            } else {
-              pageNum = currentPage - 2 + i;
-            }
-            
-            return (
-              <button
-                key={pageNum}
-                className={`${styles.paginationButton} ${currentPage === pageNum ? styles.active : ""}`}
-                onClick={() => setCurrentPage(pageNum)}
+            <div className={styles.tableActionGroup}>
+              <div className={styles.uploadWrapper}>
+                <input
+                  type="file"
+                  id="excelUpload"
+                  accept=".xlsx,.xls"
+                  onChange={handleImportExcel}
+                  style={{ display: "none" }}
+                />
+                <label htmlFor="excelUpload" className={styles.actionButtonSecondary}>
+                  <Upload size={16} />
+                  <span>Nhập Excel</span>
+                </label>
+              </div>
+              
+              <button 
+                className={styles.actionButtonSecondary}
+                onClick={handleExportExcel}
               >
-                {pageNum + 1}
+                <Download size={16} />
+                <span>Xuất Excel</span>
               </button>
-            );
-          })}
-          
-          <button 
-            className={styles.paginationButton}
-            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-            disabled={currentPage >= totalPages - 1}
-          >
-            Tiếp
-          </button>
+              
+              <button 
+                className={styles.actionButtonPrimary}
+                onClick={() => handleOpenModal("create")}
+              >
+                <Plus size={16} />
+                <span>Thêm người dùng</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className={styles.tableWrapper}>
+          {loading ? (
+            <div className={styles.loadingOverlay}>
+              <div className={styles.spinner}></div>
+              <p>Đang tải dữ liệu...</p>
+            </div>
+          ) : (
+            <table className={styles.userTable}>
+              <thead>
+                <tr>
+                  <th className={styles.tableHeaderCell}>Họ và tên</th>
+                  <th className={styles.tableHeaderCell}>Email</th>
+                  <th className={styles.tableHeaderCell}>Role</th>
+                  <th className={styles.tableHeaderCell}>Trạng thái</th>
+                  <th className={styles.tableHeaderCell}>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedUsers.length > 0 ? (
+                  paginatedUsers.map((user) => (
+                    <tr key={user.id} className={styles.tableRow}>
+                      <td className={styles.tableCell}>
+                        <div className={styles.userInfo}>
+                          <div className={styles.avatar}>
+                            {user.fullName.split(" ").map(n => n[0]).join("")}
+                          </div>
+                          <div>
+                            <div className={styles.userName}>{user.fullName}</div>
+                            <div className={styles.userId}>ID: {user.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <div className={styles.emailCell}>
+                          <Mail size={14} className={styles.emailIcon} />
+                          {user.email}
+                        </div>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span className={`${styles.roleBadge} ${getRoleClass(user.role)}`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span className={`${styles.statusBadge} ${getStatusClass(user.status)}`}>
+                          {user.status === "ACTIVE" ? 
+                            <UserCheck size={14} /> : 
+                            <UserX size={14} />
+                          }
+                          {getStatusText(user.status)}
+                        </span>
+                      </td>
+                      <td className={styles.tableCell}>
+                        {renderActionButtons(user)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className={styles.noResults}>
+                      <div className={styles.noResultsContent}>
+                        <Search size={48} className={styles.noResultsIcon} />
+                        <h3>Không tìm thấy kết quả</h3>
+                        <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+        
+        <div className={styles.tableFooter}>
+          <div className={styles.paginationInfo}>
+            Hiển thị {Math.min(startIndex + 1, totalElements)}-
+            {Math.min(startIndex + paginatedUsers.length, totalElements)} 
+            của {totalElements} người dùng
+          </div>
+          <div className={styles.paginationControls}>
+            <button 
+              className={styles.paginationButton}
+              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+              disabled={currentPage === 0}
+            >
+              Trước
+            </button>
+            
+            {Array.from({ length: Math.min(5, Math.ceil(totalElements / pageSize)) }, (_, i) => {
+              let pageNum = i;
+              return (
+                <button
+                  key={pageNum}
+                  className={`${styles.paginationButton} ${currentPage === pageNum ? styles.active : ""}`}
+                  onClick={() => setCurrentPage(pageNum)}
+                >
+                  {pageNum + 1}
+                </button>
+              );
+            })}
+            
+            <button 
+              className={styles.paginationButton}
+              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalElements / pageSize) - 1, prev + 1))}
+              disabled={currentPage >= Math.ceil(totalElements / pageSize) - 1}
+            >
+              Tiếp
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderPlaceholderContent = () => (
     <div className={styles.placeholder}>

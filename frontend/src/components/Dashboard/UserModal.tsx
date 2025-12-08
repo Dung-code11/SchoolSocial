@@ -138,10 +138,6 @@ const UserModal: React.FC<UserModalProps> = ({
             {mode === "edit" && "Chỉnh sửa thông tin"}
             {mode === "view" && "Chi tiết người dùng"}
           </h3>
-
-          <button className={styles.closeButton} onClick={onClose}>
-            <X size={20} />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.modalBody}>
