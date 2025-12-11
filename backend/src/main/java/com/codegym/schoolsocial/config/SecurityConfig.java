@@ -41,6 +41,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
 
+                // ⭐ ADMIN được CRUD classes
+                .requestMatchers("/api/classes/**").hasRole("ADMIN")
+
                 // ⭐ GET list + detail user thì yêu cầu đăng nhập
                 .requestMatchers(HttpMethod.GET, "/api/users/**").authenticated()
 
