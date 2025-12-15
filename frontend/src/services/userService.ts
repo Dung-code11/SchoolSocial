@@ -5,9 +5,8 @@ import type {
   CreateUserDTO,
   UpdateUserDTO,
   PaginatedResponse,
-  UserStatus 
+  UserStatus,
 } from "../types/user.type";
-
 
 export const userService = {
   // GET LIST with filters
@@ -53,7 +52,9 @@ export const userService = {
 
   // CHANGE STATUS
   changeStatus: async (id: number, status: UserStatus): Promise<void> => {
-    await api.put(`/users/${id}/status`, { status });
+    await api.put(`/users/${id}/status`, null, {
+      params: { status },
+    });
   },
 
   // EXPORT EXCEL
@@ -63,7 +64,7 @@ export const userService = {
     });
 
     const blob = new Blob([res.data], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 
     const url = window.URL.createObjectURL(blob);

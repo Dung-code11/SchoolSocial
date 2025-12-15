@@ -3,6 +3,7 @@ package com.codegym.schoolsocial.service;
 import com.codegym.schoolsocial.dto.UserDTO;
 import com.codegym.schoolsocial.entity.*;
 import com.codegym.schoolsocial.repository.AccountRepository;
+import com.codegym.schoolsocial.repository.SchoolClassRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.*;
@@ -15,9 +16,10 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
+    private final SchoolClassRepository schoolClassRepository; // thêm
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+
     // GET LIST + SEARCH + FILTER + PAGINATION
     public Page<UserDTO> getUsers(String keyword, String role, String status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
@@ -35,8 +37,7 @@ public class UserService {
         // search username
         else if (keyword != null && !keyword.isEmpty()) {
             accounts = accountRepository.findByUsernameContainingIgnoreCase(keyword, pageable);
-        }
-        else {
+        } else {
             accounts = accountRepository.findAll(pageable);
         }
 
@@ -75,6 +76,13 @@ public class UserService {
         acc.setRole(dto.getRole());
         acc.setStatus(dto.getStatus() != null ? dto.getStatus() : Status.ACTIVE);
         acc.setPersonalInfo(info);
+
+        // GÁN CLASS SAU KHI ĐÃ CÓ acc
+        if (dto.getClassId() != null) {
+            SchoolClass clazz = schoolClassRepository.findByClassid(dto.getClassId())
+                    .orElseThrow(() -> new RuntimeException("Class not found"));
+            acc.setSchoolClass(clazz);
+        }
 
         accountRepository.save(acc);
         return convertToDTO(acc);
@@ -120,6 +128,13 @@ public class UserService {
             acc.setPassword(encodedPassword);
         }
 
+        // CẬP NHẬT CLASS
+        if (dto.getClassId() != null) {
+            SchoolClass clazz = schoolClassRepository.findByClassid(dto.getClassId())
+                    .orElseThrow(() -> new RuntimeException("Class not found"));
+            acc.setSchoolClass(clazz);
+        }
+
         accountRepository.save(acc);
         return convertToDTO(acc);
     }
@@ -153,6 +168,10 @@ public class UserService {
             dto.setPhone(acc.getPersonalInfo().getPhone());
             dto.setAddress(acc.getPersonalInfo().getAddress());
             dto.setDob(acc.getPersonalInfo().getDob() != null ? acc.getPersonalInfo().getDob().toString() : null);
+        }
+        if (acc.getSchoolClass() != null) {
+            dto.setClassId(acc.getSchoolClass().getClassid());
+            dto.setClassName(acc.getSchoolClass().getName());
         }
 
         return dto;

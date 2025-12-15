@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -29,19 +31,26 @@ public class SecurityConfig {
         // Tắt CSRF
         http.csrf(csrf -> csrf.disable());
 
-        // ⭐ Bật CORS
+        // Bật CORS
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         // Phân quyền
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login").permitAll()
+                // TOÀN BỘ /api/auth/** được public (login, sau này refresh,...)
+                .requestMatchers("/api/auth/**").permitAll()
 
-                // ⭐ ADMIN được CRUD user
+                // MODULE POSTS
+                // Xóa bài viết: CHỈ ADMIN
+                .requestMatchers(HttpMethod.DELETE, "/api/posts/**").hasRole("ADMIN")
+                // Các API khác của posts: chỉ cần đăng nhập
+                .requestMatchers("/api/posts/**").authenticated()
+
+                // ADMIN được CRUD user
                 .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
 
-                // ⭐ GET list + detail user thì yêu cầu đăng nhập
+                // GET list + detail user thì yêu cầu đăng nhập
                 .requestMatchers(HttpMethod.GET, "/api/users/**").authenticated()
 
                 // Các API theo module riêng
@@ -51,7 +60,6 @@ public class SecurityConfig {
 
                 .anyRequest().authenticated()
         );
-
 
         // JWT Stateless
         http.sessionManagement(sm ->
@@ -64,18 +72,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ⭐ CORS FULL – Cho phép FE 5173 gọi đến
-    // ⭐ CORS - CHỈ CẦN localhost:5173 vì FE chạy trên 5173
+    // CORS - cho phép FE localhost:5173
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // CHỈ CẦN 5173 vì FE chạy trên 5173
         config.setAllowedOrigins(List.of("http://localhost:5173"));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
-        // THÊM HEADERS QUAN TRỌNG
         config.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
