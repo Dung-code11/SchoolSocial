@@ -7,6 +7,8 @@ import com.codegym.schoolsocial.repository.AccountRepository;
 import com.codegym.schoolsocial.repository.PostLikeRepository;
 import com.codegym.schoolsocial.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -105,17 +107,19 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void hideMyPost(Long postId) {
+    public void togglePostVisibility(Long postId) {
         Account me = getCurrentAccount();
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
+        // Kiểm tra quyền: chỉ tác giả hoặc ADMIN
         if (!post.getAuthor().getId().equals(me.getId())
                 && me.getRole() != Role.ADMIN) {
-            throw new AccessDeniedException("Không có quyền ẩn bài này");
+            throw new AccessDeniedException("Không có quyền thay đổi trạng thái bài viết này");
         }
 
-        post.setHidden(true);
+        // Toggle trạng thái hidden
+        post.setHidden(!post.isHidden());
         post.setUpdatedAt(LocalDateTime.now());
         postRepository.save(post);
     }
@@ -151,5 +155,38 @@ public class PostServiceImpl implements PostService {
         }
 
         return toDto(post, me);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getAllPosts(Pageable pageable, String search, Long authorId) {
+        Account currentUser = getCurrentAccount();
+
+        // Kiểm tra quyền ADMIN
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Chỉ ADMIN mới được truy cập endpoint này");
+        }
+
+        // Sử dụng query tìm kiếm động
+        Page<Post> postsPage;
+
+        if (authorId != null && search != null && !search.trim().isEmpty()) {
+            // Tìm theo cả author và search
+            Account author = accountRepository.findById(authorId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tác giả với ID: " + authorId));
+            postsPage = postRepository.findByContentContainingIgnoreCaseAndAuthor(search, author, pageable);
+        } else if (authorId != null) {
+            // Chỉ tìm theo author
+            Account author = accountRepository.findById(authorId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tác giả với ID: " + authorId));
+            postsPage = postRepository.findByAuthor(author, pageable);
+        } else if (search != null && !search.trim().isEmpty()) {
+            // Chỉ tìm theo search
+            postsPage = postRepository.findByContentContainingIgnoreCase(search, pageable);
+        } else {
+            // Lấy tất cả
+            postsPage = postRepository.findAll(pageable);
+        }
+
+        return postsPage.map(post -> toDto(post, currentUser));
     }
 }

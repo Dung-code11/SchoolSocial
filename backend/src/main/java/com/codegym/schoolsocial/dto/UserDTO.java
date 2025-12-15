@@ -19,6 +19,6 @@ public class UserDTO {
 
     private Status status;
 
-    private Long classId;
+    private String classId;
     private String className;
 }

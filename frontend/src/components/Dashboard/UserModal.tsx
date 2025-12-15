@@ -1,6 +1,9 @@
 // src/components/Dashboard/UserModal.tsx
 import React, { useState, useEffect } from "react";
-import { X, Save, User, Mail, Phone, MapPin, Shield, Lock, UserCircle } from "lucide-react";
+import { 
+  X, Save, User, Mail, Phone, MapPin, Shield, Lock, 
+  UserCircle, BookOpen, Hash
+} from "lucide-react";
 import styles from "../../css/UserModal.module.css";
 import type {
   User as UserType,
@@ -21,6 +24,8 @@ interface FormState {
   address: string;
   role: UserRole;
   status: UserStatus;
+  classId: string;       // Đổi từ classCode thành classId
+  className: string;
   password?: string;
   confirmPassword?: string;
 }
@@ -48,6 +53,8 @@ const UserModal: React.FC<UserModalProps> = ({
     address: "",
     role: "STUDENT",
     status: "ACTIVE",
+    classId: "",       // Đổi từ classCode thành classId
+    className: "",
     password: "",
     confirmPassword: "",
   });
@@ -67,6 +74,8 @@ const UserModal: React.FC<UserModalProps> = ({
         address: user.address || "",
         role: user.role,
         status: user.status,
+        classId: user.classId || "",      // Đổi từ classCode thành classId
+        className: user.className || "",
       });
     } else {
       setFormData({
@@ -77,6 +86,8 @@ const UserModal: React.FC<UserModalProps> = ({
         address: "",
         role: "STUDENT",
         status: "ACTIVE",
+        classId: "",       // Đổi từ classCode thành classId
+        className: "",
         password: "",
         confirmPassword: "",
       });
@@ -115,6 +126,11 @@ const UserModal: React.FC<UserModalProps> = ({
 
     // REMOVE confirmPassword
     delete payload.confirmPassword;
+
+    // Nếu classId không nhập, gán giá trị mặc định "DEFAULT_CLASS"
+    if (!payload.classId || payload.classId.trim() === "") {
+      payload.classId = "DEFAULT_CLASS";
+    }
 
     // Nếu edit → không gửi password
     if (mode === "edit") {
@@ -259,6 +275,51 @@ const UserModal: React.FC<UserModalProps> = ({
             </>
           )}
 
+          {/* CLASS ID & CLASS NAME */}
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>
+                <Hash size={16} />
+                Mã lớp học (classId) *
+              </label>
+              <input
+                type="text"
+                value={formData.classId}
+                onChange={(e) =>
+                  setFormData({ ...formData, classId: e.target.value })
+                }
+                disabled={isViewMode}
+                placeholder="Nhập mã lớp (nếu không nhập sẽ mặc định: DEFAULT_CLASS)"
+              />
+              <small className={styles.fieldHint}>
+                {!formData.classId || formData.classId.trim() === "" 
+                  ? "Sẽ lưu với mã lớp: DEFAULT_CLASS" 
+                  : `Mã lớp: ${formData.classId}`}
+              </small>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>
+                <BookOpen size={16} />
+                Tên lớp học (className)
+              </label>
+              <input
+                type="text"
+                value={formData.className}
+                onChange={(e) =>
+                  setFormData({ ...formData, className: e.target.value })
+                }
+                disabled={isViewMode}
+                placeholder="Nhập tên lớp học"
+              />
+              <small className={styles.fieldHint}>
+                {!formData.className || formData.className.trim() === "" 
+                  ? "Có thể để trống" 
+                  : `Tên lớp: ${formData.className}`}
+              </small>
+            </div>
+          </div>
+
           {/* PHONE + ROLE */}
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
@@ -327,7 +388,7 @@ const UserModal: React.FC<UserModalProps> = ({
               disabled={isViewMode}
             >
               <option value="ACTIVE">Hoạt động</option>
-              <option value="INACTIVE">Không hoạt động</option>
+              <option value="LOCKED">Không hoạt động</option>
             </select>
           </div>
 

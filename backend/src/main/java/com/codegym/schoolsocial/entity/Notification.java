@@ -34,6 +34,6 @@ public class Notification {
 
     // Lớp nhận thông báo
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", nullable = false)
+    @JoinColumn(name = "classid", nullable = false)
     private SchoolClass targetClass;
 }

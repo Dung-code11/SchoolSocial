@@ -34,6 +34,6 @@ public class Post {
     private boolean hidden = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
+    @JoinColumn(name = "classid")
     private SchoolClass schoolClass;
 }

@@ -79,7 +79,7 @@ public class UserService {
 
         // GÁN CLASS SAU KHI ĐÃ CÓ acc
         if (dto.getClassId() != null) {
-            SchoolClass clazz = schoolClassRepository.findById(dto.getClassId())
+            SchoolClass clazz = schoolClassRepository.findByClassid(dto.getClassId())
                     .orElseThrow(() -> new RuntimeException("Class not found"));
             acc.setSchoolClass(clazz);
         }
@@ -130,7 +130,7 @@ public class UserService {
 
         // CẬP NHẬT CLASS
         if (dto.getClassId() != null) {
-            SchoolClass clazz = schoolClassRepository.findById(dto.getClassId())
+            SchoolClass clazz = schoolClassRepository.findByClassid(dto.getClassId())
                     .orElseThrow(() -> new RuntimeException("Class not found"));
             acc.setSchoolClass(clazz);
         }
@@ -170,7 +170,7 @@ public class UserService {
             dto.setDob(acc.getPersonalInfo().getDob() != null ? acc.getPersonalInfo().getDob().toString() : null);
         }
         if (acc.getSchoolClass() != null) {
-            dto.setClassId(acc.getSchoolClass().getId());
+            dto.setClassId(acc.getSchoolClass().getClassid());
             dto.setClassName(acc.getSchoolClass().getName());
         }
 

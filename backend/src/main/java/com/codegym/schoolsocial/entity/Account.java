@@ -30,6 +30,6 @@ public class Account {
     private PersonalInfo personalInfo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
+    @JoinColumn(name = "classid")
     private SchoolClass schoolClass;
 }

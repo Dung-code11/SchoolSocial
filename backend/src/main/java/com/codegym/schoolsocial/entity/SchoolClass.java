@@ -16,6 +16,8 @@ public class SchoolClass {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private String classid;
     // Ví dụ: "10A1", "11B2"...
     @Column(nullable = false, unique = true)
     private String name;

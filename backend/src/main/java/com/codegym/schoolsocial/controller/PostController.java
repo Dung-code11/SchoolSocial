@@ -4,6 +4,10 @@ import com.codegym.schoolsocial.dto.PostCreateRequest;
 import com.codegym.schoolsocial.dto.PostResponse;
 import com.codegym.schoolsocial.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -39,10 +43,10 @@ public class PostController {
     }
 
     // Ẩn bài viết của mình (hoặc Admin)
-    @PatchMapping("/{postId}/hide")
+    @PatchMapping("/{postId}/toggle-visibility")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> hidePost(@PathVariable Long postId) {
-        postService.hideMyPost(postId);
+    public ResponseEntity<Void> togglePostVisibility(@PathVariable Long postId) {
+        postService.togglePostVisibility(postId);
         return ResponseEntity.noContent().build();
     }
 
@@ -59,5 +63,16 @@ public class PostController {
     public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
         postService.deletePostAsAdmin(postId);
         return ResponseEntity.noContent().build();
+    }
+    // Lấy tất cả bài viết (ADMIN only)
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<PostResponse>> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long authorId) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ResponseEntity.ok(postService.getAllPosts(pageable, search, authorId));
     }
 }
