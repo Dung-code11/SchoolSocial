@@ -12,6 +12,7 @@ import {
   Edit,
   Trash2,
   Eye,
+  Filter,
   Download,
   Plus,
   Upload,
@@ -19,14 +20,13 @@ import {
   Shield,
   UserCheck,
   UserX,
+  Calendar,
   Mail,
   Settings,
   Users,
   BookOpen,
   GraduationCap,
   Key,
-  Filter,
-  MoreVertical
   History,
   FileText,
   Heart,
@@ -54,50 +54,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Users state
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      fullName: "Nguyễn Văn E",
-      email: "dairpgyen2174@gmail.com",
-      role: "STUDENT",
-      status: "ACTIVE"
-    },
-    {
-      id: 2,
-      fullName: "Nguyễn Văn E",
-      email: "Erggyenvan@gmail.com",
-      role: "ADMIN",
-      status: "ACTIVE"
-    },
-    {
-      id: 3,
-      fullName: "Nguyễn Văn E",
-      email: "dragyenvan@gmail.com",
-      role: "ADMIN",
-      status: "ACTIVE"
-    },
-    {
-      id: 4,
-      fullName: "Nguyễn Văn C",
-      email: "crggyenvan@gmail.com",
-      role: "ADMIN",
-      status: "ACTIVE"
-    },
-    {
-      id: 5,
-      fullName: "Đào Đáng A",
-      email: "adangdao@gmail.com",
-      role: "STUDENT",
-      status: "INACTIVE"
-    },
-    {
-      id: 6,
-      fullName: "Trần Thị B",
-      email: "tranthib@gmail.com",
-      role: "TEACHER",
-      status: "ACTIVE"
-    }
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -128,7 +85,7 @@ const DashboardPage: React.FC = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(6);
+  const [totalElements, setTotalElements] = useState(0);
   const [pageSize] = useState(10);
 
   // Modal state
@@ -150,13 +107,6 @@ const DashboardPage: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Trong thực tế sẽ gọi API
-      // const response = await userService.getUsers(...);
-      
-      // Hiện tại dùng mock data
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
       const response = await userService.getUsers(
         searchTerm || undefined,
         selectedRole !== "all" ? selectedRole : undefined,
@@ -171,11 +121,12 @@ const DashboardPage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching users:", error);
       alert("Lỗi khi tải danh sách người dùng");
+    } finally {
       setLoading(false);
     }
   };
 
-  // Load users khi filter thay đổi
+  // Load users khi component mount và khi filter thay đổi
   useEffect(() => {
     fetchUsers();
   }, [currentPage, selectedRole, selectedStatus]);
@@ -336,6 +287,7 @@ const handleToggleHidePost = async (postId: number) => {
         loadInteractions();
       }
     }, 500);
+
     return () => clearTimeout(timer);
   }, [searchTerm, interactionTypeFilter, interactionUserId]);
 
@@ -435,8 +387,7 @@ const handleToggleHidePost = async (postId: number) => {
   const handleDeleteUser = async (id: number) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
       try {
-        // await userService.deleteUser(id);
-        setUsers(prev => prev.filter(user => user.id !== id));
+        await userService.deleteUser(id);
         alert("Xóa người dùng thành công");
         fetchUsers();
       } catch (error) {
@@ -462,8 +413,7 @@ const handleToggleHidePost = async (postId: number) => {
 
   const handleExportExcel = async () => {
     try {
-      // await userService.exportExcel();
-      alert("Xuất Excel thành công");
+      await userService.exportExcel();
     } catch (error) {
       alert("Lỗi khi xuất Excel");
     }
@@ -869,8 +819,7 @@ const handleToggleHidePost = async (postId: number) => {
                 }`}
                 onClick={() => setCurrentPage(pageNum)}
               >
-                <Download size={16} />
-                <span>Xuất Excel</span>
+                {pageNum + 1}
               </button>
             );
           })}
@@ -886,8 +835,8 @@ const handleToggleHidePost = async (postId: number) => {
           </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   const renderPlaceholderContent = () => (
     <div className={styles.placeholder}>
